@@ -5,6 +5,14 @@ import bcrypt from 'bcryptjs';
 const NEON_URL = process.env.NEON_DATABASE_URL!;
 const sql = neon(NEON_URL);
 
+async function columnExists(table: string, column: string): Promise<boolean> {
+  const rows = await sql`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_name = ${table} AND column_name = ${column}
+  `;
+  return rows.length > 0;
+}
+
 async function main() {
   console.log('[Neon] 스키마 초기화 시작...');
 
@@ -61,11 +69,34 @@ async function main() {
 
   console.log('[Neon] 스키마 초기화 완료');
 
+  // 마이그레이션: 기존 테이블에 새 컬럼 추가 (이미 있으면 스킵)
+  const migrations: { table: string; column: string; type: string }[] = [
+    { table: 'scraps', column: 'region', type: 'TEXT' },
+    { table: 'scraps', column: 'translation', type: 'TEXT' },
+    { table: 'scraps', column: 'commentary', type: 'TEXT' },
+    { table: 'scraps', column: 'deleted_at', type: 'TIMESTAMPTZ DEFAULT NULL' },
+    { table: 'posts', column: 'deleted_at', type: 'TIMESTAMPTZ DEFAULT NULL' },
+  ];
+
+  for (const m of migrations) {
+    const exists = await columnExists(m.table, m.column);
+    if (!exists) {
+      // DDL requires dynamic identifiers — use sql.query() for raw SQL DDL
+      const alterSql = `ALTER TABLE ${m.table} ADD COLUMN ${m.column} ${m.type}`;
+      await sql.query(alterSql);
+      console.log(`[Neon] 마이그레이션: ${m.table}.${m.column} 컬럼 추가`);
+    } else {
+      console.log(`[Neon] 마이그레이션 스킵: ${m.table}.${m.column} (이미 존재)`);
+    }
+  }
+
   // 인덱스
   await sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_scraps_user_id ON scraps (user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_scraps_scrap_date ON scraps (scrap_date)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_scraps_news_date ON scraps (news_date)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts (user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_posts_notice ON posts (is_notice, is_pinned)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events (date)`;
 
   // 슈퍼 관리자 시드
