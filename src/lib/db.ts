@@ -52,8 +52,8 @@ function neonQuery(sqlFn: ReturnType<typeof neon>, sql: string, params: any[]) {
  */
 export async function query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
   if (USE_NEON) {
-    const result = await neonQuery(getSql(), sql, params);
-    return (result as any).rows as T[];
+    const rows = await neonQuery(getSql(), sql, params);
+    return rows as T[];
   }
   return getDb().prepare(sql).all(...params) as T[];
 }
@@ -66,9 +66,8 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
  */
 export async function get<T = any>(sql: string, params: any[] = []): Promise<T | undefined> {
   if (USE_NEON) {
-    const result = await neonQuery(getSql(), sql, params);
-    const rows = (result as any).rows as T[];
-    return rows[0];
+    const rows = await neonQuery(getSql(), sql, params);
+    return (rows as any[])[0] as T | undefined;
   }
   return getDb().prepare(sql).get(...params) as T | undefined;
 }
