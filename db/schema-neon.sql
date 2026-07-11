@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS scraps (
   translation TEXT,
   commentary TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_scraps_user_id ON scraps (user_id);
@@ -46,7 +47,8 @@ CREATE TABLE IF NOT EXISTS posts (
   is_notice INTEGER NOT NULL DEFAULT 0,
   is_pinned INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts (user_id);

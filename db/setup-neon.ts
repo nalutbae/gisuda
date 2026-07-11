@@ -33,7 +33,8 @@ async function main() {
     translation TEXT,
     commentary TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ DEFAULT NULL
   )`;
 
   await sql`CREATE TABLE IF NOT EXISTS posts (
@@ -44,7 +45,8 @@ async function main() {
     is_notice INTEGER NOT NULL DEFAULT 0,
     is_pinned INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ DEFAULT NULL
   )`;
 
   await sql`CREATE TABLE IF NOT EXISTS calendar_events (

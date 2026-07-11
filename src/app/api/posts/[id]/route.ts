@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { get, run } from "@/lib/db";
+import { get, run, now } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
 export async function GET(
@@ -11,15 +11,52 @@ export async function GET(
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
     const { id } = await params;
     const post = await get(`
-      SELECT p.*, u.name as user_name
+      SELECT p.id, p.user_id, p.title, p.content, p.is_notice, p.is_pinned, p.created_at, p.updated_at, u.name as user_name
       FROM posts p JOIN users u ON p.user_id = u.id
-      WHERE p.id = ?
+      WHERE p.id = ? AND p.deleted_at IS NULL
     `, [id]);
     if (!post) return NextResponse.json({ error: "게시글 없음" }, { status: 404 });
     return NextResponse.json({ success: true, data: post });
   } catch (err) {
     console.error("[Post GET]", err);
     return NextResponse.json({ error: "조회 실패" }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
+    const { id } = await params;
+    const role = session.user?.role;
+    const userId = session.user?.id;
+
+    // Check ownership or admin
+    const post = await get("SELECT user_id FROM posts WHERE id = ? AND deleted_at IS NULL", [id]);
+    if (!post) return NextResponse.json({ error: "게시글 없음" }, { status: 404 });
+    if (role !== "SUPER_ADMIN" && role !== "ADMIN" && post.user_id !== userId) {
+      return NextResponse.json({ error: "권한 없음" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { title, content } = body;
+    if (!title || !content) {
+      return NextResponse.json({ error: "필수 항목 누락" }, { status: 400 });
+    }
+
+    const ts = now();
+    await run(`
+      UPDATE posts SET title = ?, content = ?, updated_at = ?
+      WHERE id = ?
+    `, [title, content, ts, id]);
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[Post PUT]", err);
+    return NextResponse.json({ error: "수정 실패" }, { status: 500 });
   }
 }
 
@@ -31,13 +68,18 @@ export async function DELETE(
     const session = await auth();
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
     const { id } = await params;
-    const isAdmin = session.user?.role === "ADMIN";
-    if (isAdmin) {
-      await run("DELETE FROM posts WHERE id = ?", [id]);
-    } else {
-      const userId = session.user?.id;
-      await run("DELETE FROM posts WHERE id = ? AND user_id = ?", [id, userId]);
+    const role = session.user?.role;
+    const userId = session.user?.id;
+
+    // Check ownership or admin
+    const post = await get("SELECT user_id FROM posts WHERE id = ? AND deleted_at IS NULL", [id]);
+    if (!post) return NextResponse.json({ error: "게시글 없음" }, { status: 404 });
+    if (role !== "SUPER_ADMIN" && role !== "ADMIN" && post.user_id !== userId) {
+      return NextResponse.json({ error: "권한 없음" }, { status: 403 });
     }
+
+    const ts = now();
+    await run("UPDATE posts SET deleted_at = ? WHERE id = ?", [ts, id]);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[Post DELETE]", err);

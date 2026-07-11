@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS scraps (
   translation TEXT,               -- 번역
   commentary TEXT,               -- 한줄논평
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at TEXT DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_scraps_user_id ON scraps (user_id);
@@ -47,7 +48,8 @@ CREATE TABLE IF NOT EXISTS posts (
   is_notice INTEGER NOT NULL DEFAULT 0,  -- 공지사항 여부
   is_pinned INTEGER NOT NULL DEFAULT 0,  -- 상단 고정 여부
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at TEXT DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts (user_id);

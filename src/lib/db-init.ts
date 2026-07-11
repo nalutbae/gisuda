@@ -21,12 +21,30 @@ export function initDatabase(db: Database.Database): void {
       { name: 'region', sql: 'ALTER TABLE scraps ADD COLUMN region TEXT' },
       { name: 'translation', sql: 'ALTER TABLE scraps ADD COLUMN translation TEXT' },
       { name: 'commentary', sql: 'ALTER TABLE scraps ADD COLUMN commentary TEXT' },
+      { name: 'deleted_at', sql: "ALTER TABLE scraps ADD COLUMN deleted_at TEXT DEFAULT NULL" },
     ];
     for (const col of newColumns) {
       if (!columnNames.includes(col.name)) {
         try {
           db.exec(col.sql);
-          console.log(`[DB] Added column: ${col.name}`);
+          console.log(`[DB] Added column: ${col.name} to scraps`);
+        } catch (e: any) {
+          if (!e.message.includes('duplicate column')) throw e;
+        }
+      }
+    }
+
+    // Check posts table for deleted_at column
+    const postColumns = db.prepare("PRAGMA table_info(posts)").all() as { name: string }[];
+    const postColumnNames = postColumns.map(c => c.name);
+    const postNewColumns = [
+      { name: 'deleted_at', sql: "ALTER TABLE posts ADD COLUMN deleted_at TEXT DEFAULT NULL" },
+    ];
+    for (const col of postNewColumns) {
+      if (!postColumnNames.includes(col.name)) {
+        try {
+          db.exec(col.sql);
+          console.log(`[DB] Added column: ${col.name} to posts`);
         } catch (e: any) {
           if (!e.message.includes('duplicate column')) throw e;
         }

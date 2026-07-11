@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { query, run } from "@/lib/db";
+import { query, run, now } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
 export async function GET() {
@@ -9,6 +9,7 @@ export async function GET() {
     const scraps = await query(`
       SELECT s.id, s.scrap_date, s.news_date, s.title, s.link, s.newspaper, s.region, s.keywords, s.summary, s.translation, s.commentary, s.user_id, u.name as user_name
       FROM scraps s JOIN users u ON s.user_id = u.id
+      WHERE s.deleted_at IS NULL
       ORDER BY s.scrap_date DESC, s.created_at DESC
     `);
     return NextResponse.json({ success: true, data: scraps });
@@ -48,11 +49,12 @@ export async function DELETE(req: Request) {
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id 필요" }, { status: 400 });
     const role = session.user?.role;
+    const userId = session.user?.id;
+    const ts = now();
     if (role === "SUPER_ADMIN" || role === "ADMIN") {
-      await run("DELETE FROM scraps WHERE id = ?", [id]);
+      await run("UPDATE scraps SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL", [ts, id]);
     } else {
-      const userId = session.user?.id;
-      await run("DELETE FROM scraps WHERE id = ? AND user_id = ?", [id, userId]);
+      await run("UPDATE scraps SET deleted_at = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL", [ts, id, userId]);
     }
     return NextResponse.json({ success: true });
   } catch (err) {

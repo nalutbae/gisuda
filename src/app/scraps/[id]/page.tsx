@@ -1,12 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
-interface Scrap { id: string; scrap_date: string; news_date: string; title: string; link: string; newspaper: string; region: string; keywords: string; summary: string; translation: string; commentary: string; user_name: string }
+interface Scrap { id: string; user_id: string; scrap_date: string; news_date: string; title: string; link: string; newspaper: string; region: string; keywords: string; summary: string; translation: string; commentary: string; user_name: string }
 
 export default function ScrapDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { data: session } = useSession();
   const id = params?.id as string;
   const [scrap, setScrap] = useState<Scrap | null>(null);
   const [loading, setLoading] = useState(true);
@@ -16,8 +19,23 @@ export default function ScrapDetailPage() {
     fetch(`/api/scraps/${id}`).then(r => r.json()).then(d => { if (d.success) setScrap(d.data); setLoading(false); });
   }, [id]);
 
+  async function handleDelete() {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    const res = await fetch(`/api/scraps/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/scraps");
+    } else {
+      const data = await res.json();
+      alert(data.error || "삭제 실패");
+    }
+  }
+
   if (loading) return <div className="text-center py-12 text-gray-500">로딩 중...</div>;
   if (!scrap) return <div className="text-center py-12 text-gray-500">스크랩을 찾을 수 없습니다.</div>;
+
+  const isAdmin = session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "ADMIN";
+  const isOwner = session?.user?.id === scrap.user_id;
+  const canModify = isOwner || isAdmin;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -57,6 +75,12 @@ export default function ScrapDetailPage() {
         </div>
         <div className="text-sm text-gray-400 mt-2">작성자: {scrap.user_name}</div>
       </div>
+      {canModify && (
+        <div className="mt-4 flex gap-3 justify-end">
+          <Link href={`/scraps/${id}/edit`} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">수정</Link>
+          <button onClick={handleDelete} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 text-sm">삭제</button>
+        </div>
+      )}
     </div>
   );
 }

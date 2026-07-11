@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 
 interface Post {
   id: string;
+  user_id: string;
   title: string;
   content: string;
   is_notice: number;
@@ -44,15 +45,17 @@ export default function PostPage() {
     if (res.ok) {
       router.push("/board");
     } else {
-      alert("삭제 실패");
+      const data = await res.json();
+      alert(data.error || "삭제 실패");
     }
   }
 
   if (loading) return <div className="text-center py-12 text-gray-500">로딩 중...</div>;
   if (!post) return <div className="text-center py-12"><p>게시글을 찾을 수 없습니다.</p><Link href="/board" className="text-blue-600 hover:underline">← 게시판으로</Link></div>;
 
-  const isAdmin = (session?.user as any)?.role === "ADMIN";
-  const isOwner = (session?.user as any)?.id === post.user_name; // Note: server sends user_name, not user_id for display
+  const isAdmin = session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "ADMIN";
+  const isOwner = session?.user?.id === post.user_id;
+  const canModify = isOwner || isAdmin;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -66,9 +69,10 @@ export default function PostPage() {
         <p className="text-sm text-gray-500 mb-4">{post.user_name} · {new Date(post.created_at).toLocaleDateString("ko-KR")}</p>
         <div className="whitespace-pre-wrap">{post.content}</div>
       </div>
-      {(isAdmin) && (
-        <div className="mt-4 text-right">
-          <button onClick={handleDelete} className="text-red-500 hover:text-red-700 text-sm">삭제</button>
+      {canModify && (
+        <div className="mt-4 flex gap-3 justify-end">
+          <Link href={`/board/${id}/edit`} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">수정</Link>
+          <button onClick={handleDelete} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 text-sm">삭제</button>
         </div>
       )}
     </div>
