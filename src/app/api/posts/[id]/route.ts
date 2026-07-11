@@ -11,7 +11,7 @@ export async function GET(
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
     const { id } = await params;
     const post = await get(`
-      SELECT p.id, p.user_id, p.title, p.content, p.is_notice, p.is_pinned, p.created_at, p.updated_at, u.name as user_name
+      SELECT p.id, p.user_id, p.title, p.content, p.is_notice, p.is_pinned, p.is_active, p.image_url, p.created_at, p.updated_at, u.name as user_name
       FROM posts p JOIN users u ON p.user_id = u.id
       WHERE p.id = ? AND p.deleted_at IS NULL
     `, [id]);
@@ -42,20 +42,50 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { title, content } = body;
+    const { title, content, image_url } = body;
     if (!title || !content) {
       return NextResponse.json({ error: "필수 항목 누락" }, { status: 400 });
     }
 
     const ts = now();
     await run(`
-      UPDATE posts SET title = ?, content = ?, updated_at = ?
+      UPDATE posts SET title = ?, content = ?, image_url = ?, updated_at = ?
       WHERE id = ?
-    `, [title, content, ts, id]);
+    `, [title, content, image_url || null, ts, id]);
 
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[Post PUT]", err);
+    return NextResponse.json({ error: "수정 실패" }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
+    const { id } = await params;
+    const role = session.user?.role;
+    if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
+      return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { is_active } = body;
+    if (typeof is_active !== "number" && typeof is_active !== "boolean") {
+      return NextResponse.json({ error: "is_active 필요" }, { status: 400 });
+    }
+
+    const activeValue = Number(is_active);
+    const ts = now();
+    await run("UPDATE posts SET is_active = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL", [activeValue, ts, id]);
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[Post PATCH]", err);
     return NextResponse.json({ error: "수정 실패" }, { status: 500 });
   }
 }

@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS scraps (
   summary TEXT,                   -- 요약
   translation TEXT,               -- 번역
   commentary TEXT,               -- 한줄논평
+  image_url TEXT,                 -- 첨부 이미지 URL
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   deleted_at TEXT DEFAULT NULL
@@ -47,6 +48,8 @@ CREATE TABLE IF NOT EXISTS posts (
   content TEXT NOT NULL,
   is_notice INTEGER NOT NULL DEFAULT 0,  -- 공지사항 여부
   is_pinned INTEGER NOT NULL DEFAULT 0,  -- 상단 고정 여부
+  is_active INTEGER NOT NULL DEFAULT 1,   -- 활성/비활성 (비활성 공지는 일반 사용자에게 숨김)
+  image_url TEXT,                          -- 첨부 이미지 URL
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   deleted_at TEXT DEFAULT NULL

@@ -33,7 +33,7 @@ export default function NewEventPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-6">📢 공지 추가</h1>
+      <h1 className="text-2xl font-bold mb-6">📅 캘린더 이벤트 공지 추가</h1>
       {error && <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg mb-4">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div><label className="block text-sm font-medium mb-1">날짜</label><input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} className="w-full border rounded-lg px-3 py-2" required /></div>

@@ -45,4 +45,4 @@ next-env.d.ts
 
 # database
 /data/
-*.db
+*.db# Ignore uploaded files in dev\n/public/uploads/*\n!/public/uploads/.gitkeep

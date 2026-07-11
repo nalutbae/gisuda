@@ -76,7 +76,10 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
-      <div className="mt-8"><Link href="/admin/events/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">+ 공지 추가</Link></div>
+      <div className="mt-8 flex gap-3">
+        <Link href="/admin/events/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">📅 캘린더 이벤트 공지</Link>
+        <Link href="/admin/notices" className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">📢 게시판 공지 관리</Link>
+      </div>
     </div>
   );
 }

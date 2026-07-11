@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS scraps (
   summary TEXT,
   translation TEXT,
   commentary TEXT,
+  image_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ DEFAULT NULL
@@ -46,6 +47,8 @@ CREATE TABLE IF NOT EXISTS posts (
   content TEXT NOT NULL,
   is_notice INTEGER NOT NULL DEFAULT 0,
   is_pinned INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  image_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ DEFAULT NULL

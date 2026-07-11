@@ -4,7 +4,18 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
-interface Scrap { id: string; user_id: string; scrap_date: string; news_date: string; title: string; link: string; newspaper: string; region: string; keywords: string; summary: string; translation: string; commentary: string; user_name: string }
+interface Scrap { id: string; user_id: string; scrap_date: string; news_date: string; title: string; link: string; newspaper: string; region: string; keywords: string; summary: string; translation: string; commentary: string; image_url: string; user_name: string }
+
+function ImageModal({ src, onClose }: { src: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="relative max-w-4xl max-h-[90vh]">
+        <button onClick={onClose} className="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-gray-700 hover:bg-gray-100 text-lg font-bold">×</button>
+        <img src={src} alt="full" className="max-w-full max-h-[85vh] rounded-lg" onClick={e => e.stopPropagation()} />
+      </div>
+    </div>
+  );
+}
 
 export default function ScrapDetailPage() {
   const params = useParams();
@@ -13,6 +24,7 @@ export default function ScrapDetailPage() {
   const id = params?.id as string;
   const [scrap, setScrap] = useState<Scrap | null>(null);
   const [loading, setLoading] = useState(true);
+  const [modalImage, setModalImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -39,6 +51,7 @@ export default function ScrapDetailPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      {modalImage && <ImageModal src={modalImage} onClose={() => setModalImage(null)} />}
       <div className="mb-4"><Link href="/scraps" className="text-blue-600 text-sm hover:underline">← 스크랩 목록</Link></div>
       <div className="border rounded-lg p-6">
         <h1 className="text-2xl font-bold mb-3">{scrap.title}</h1>
@@ -49,6 +62,11 @@ export default function ScrapDetailPage() {
           {scrap.newspaper && <><span>·</span><span>{scrap.newspaper}</span></>}
           {scrap.region && <><span>·</span><span>🌍 {scrap.region}</span></>}
         </div>
+        {scrap.image_url && (
+          <div className="mb-4">
+            <img src={scrap.image_url} alt="첨부 이미지" className="max-h-96 rounded-lg cursor-pointer hover:opacity-90 transition" onClick={() => setModalImage(scrap.image_url)} />
+          </div>
+        )}
         {scrap.keywords && (
           <div className="mb-4">{scrap.keywords.split(",").map(kw => <span key={kw} className="keyword-tag">{kw.trim()}</span>)}</div>
         )}

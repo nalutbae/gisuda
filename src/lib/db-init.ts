@@ -22,6 +22,7 @@ export function initDatabase(db: Database.Database): void {
       { name: 'translation', sql: 'ALTER TABLE scraps ADD COLUMN translation TEXT' },
       { name: 'commentary', sql: 'ALTER TABLE scraps ADD COLUMN commentary TEXT' },
       { name: 'deleted_at', sql: "ALTER TABLE scraps ADD COLUMN deleted_at TEXT DEFAULT NULL" },
+      { name: 'image_url', sql: 'ALTER TABLE scraps ADD COLUMN image_url TEXT' },
     ];
     for (const col of newColumns) {
       if (!columnNames.includes(col.name)) {
@@ -34,11 +35,13 @@ export function initDatabase(db: Database.Database): void {
       }
     }
 
-    // Check posts table for deleted_at column
+    // Check posts table for new columns
     const postColumns = db.prepare("PRAGMA table_info(posts)").all() as { name: string }[];
     const postColumnNames = postColumns.map(c => c.name);
     const postNewColumns = [
       { name: 'deleted_at', sql: "ALTER TABLE posts ADD COLUMN deleted_at TEXT DEFAULT NULL" },
+      { name: 'is_active', sql: "ALTER TABLE posts ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1" },
+      { name: 'image_url', sql: 'ALTER TABLE posts ADD COLUMN image_url TEXT' },
     ];
     for (const col of postNewColumns) {
       if (!postColumnNames.includes(col.name)) {

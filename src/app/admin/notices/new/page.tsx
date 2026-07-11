@@ -1,15 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 
-export default function NewPostPage() {
+export default function NewNoticePage() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const isAdmin = (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-  const [form, setForm] = useState({ title: "", content: "", is_notice: false, image_url: "" });
+  const [form, setForm] = useState({ title: "", content: "", image_url: "" });
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -34,32 +32,40 @@ export default function NewPostPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
     setSubmitting(true);
-    const res = await fetch("/api/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    });
-    setSubmitting(false);
-    if (res.ok) router.push("/board");
-    else {
-      const data = await res.json();
-      alert(data.error || "생성 실패");
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, is_notice: true }),
+      });
+      if (res.ok) {
+        router.push("/admin/notices");
+      } else {
+        const data = await res.json();
+        setError(data.error || "생성 실패");
+      }
+    } catch {
+      setError("네트워크 오류");
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-6">✏️ 글쓰기</h1>
+      <h1 className="text-2xl font-bold mb-6">📢 게시판 공지 추가</h1>
+      {error && <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg mb-4">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input type="text" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="제목" required />
-        <textarea value={form.content} onChange={(e) => setForm({...form, content: e.target.value})} className="w-full border rounded-lg px-3 py-2" rows={8} placeholder="내용" required />
-        {isAdmin && (
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={form.is_notice} onChange={(e) => setForm({...form, is_notice: e.target.checked})} className="w-4 h-4" />
-            <span className="text-sm">📢 공지로 등록</span>
-          </label>
-        )}
+        <div>
+          <label className="block text-sm font-medium mb-1">제목</label>
+          <input type="text" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full border rounded-lg px-3 py-2" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">내용</label>
+          <textarea value={form.content} onChange={(e) => setForm({...form, content: e.target.value})} className="w-full border rounded-lg px-3 py-2" rows={8} required />
+        </div>
         <div>
           <label className="block text-sm font-medium mb-1">이미지 첨부</label>
           <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm" disabled={uploading} />

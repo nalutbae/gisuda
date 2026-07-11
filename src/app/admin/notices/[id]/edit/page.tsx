@@ -5,7 +5,7 @@ import Link from "next/link";
 
 interface Post { id: string; user_id: string; title: string; content: string; image_url: string }
 
-export default function EditPostPage() {
+export default function EditNoticePage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -17,7 +17,9 @@ export default function EditPostPage() {
   useEffect(() => {
     if (!id) return;
     fetch(`/api/posts/${id}`).then(r => r.json()).then(d => {
-      if (d.success) setForm({ id: d.data.id, user_id: d.data.user_id, title: d.data.title, content: d.data.content, image_url: d.data.image_url || "" });
+      if (d.success) {
+        setForm({ id: d.data.id, user_id: d.data.user_id, title: d.data.title, content: d.data.content, image_url: d.data.image_url || "" });
+      }
       setLoading(false);
     });
   }, [id]);
@@ -53,7 +55,7 @@ export default function EditPostPage() {
     });
     setSaving(false);
     if (res.ok) {
-      router.push(`/board/${id}`);
+      router.push("/admin/notices");
     } else {
       const data = await res.json();
       alert(data.error || "수정 실패");
@@ -64,11 +66,17 @@ export default function EditPostPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="mb-4"><Link href={`/board/${id}`} className="text-blue-600 text-sm hover:underline">← 게시글 상세</Link></div>
-      <h1 className="text-2xl font-bold mb-6">✏️ 글 수정</h1>
+      <div className="mb-4"><Link href="/admin/notices" className="text-blue-600 text-sm hover:underline">← 공지 관리로</Link></div>
+      <h1 className="text-2xl font-bold mb-6">✏️ 공지 수정</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input type="text" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="제목" required />
-        <textarea value={form.content} onChange={(e) => setForm({...form, content: e.target.value})} className="w-full border rounded-lg px-3 py-2" rows={8} placeholder="내용" required />
+        <div>
+          <label className="block text-sm font-medium mb-1">제목</label>
+          <input type="text" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full border rounded-lg px-3 py-2" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">내용</label>
+          <textarea value={form.content} onChange={(e) => setForm({...form, content: e.target.value})} className="w-full border rounded-lg px-3 py-2" rows={8} required />
+        </div>
         <div>
           <label className="block text-sm font-medium mb-1">이미지 첨부</label>
           <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm" disabled={uploading} />

@@ -13,8 +13,21 @@ interface Post {
   content: string;
   is_notice: number;
   is_pinned: number;
+  is_active: number;
+  image_url: string;
   user_name: string;
   created_at: string;
+}
+
+function ImageModal({ src, onClose }: { src: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="relative max-w-4xl max-h-[90vh]">
+        <button onClick={onClose} className="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-gray-700 hover:bg-gray-100 text-lg font-bold">×</button>
+        <img src={src} alt="full" className="max-w-full max-h-[85vh] rounded-lg" onClick={e => e.stopPropagation()} />
+      </div>
+    </div>
+  );
 }
 
 export default function PostPage() {
@@ -24,6 +37,7 @@ export default function PostPage() {
   const id = params.id as string;
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [modalImage, setModalImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -59,14 +73,20 @@ export default function PostPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      {modalImage && <ImageModal src={modalImage} onClose={() => setModalImage(null)} />}
       <div className="mb-4"><Link href="/board" className="text-blue-600 text-sm hover:underline">← 게시판</Link></div>
       <div className="border rounded-lg p-6">
         <div className="flex items-center gap-2 mb-2">
-          {post.is_notice && <span className="notice-badge">공지</span>}
+          {post.is_notice && <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700">📢 공지</span>}
           {post.is_pinned && <span>📌</span>}
           <h1 className="text-2xl font-bold">{post.title}</h1>
         </div>
         <p className="text-sm text-gray-500 mb-4">{post.user_name} · {new Date(post.created_at).toLocaleDateString("ko-KR")}</p>
+        {post.image_url && (
+          <div className="mb-4">
+            <img src={post.image_url} alt="첨부 이미지" className="max-h-96 rounded-lg cursor-pointer hover:opacity-90 transition" onClick={() => setModalImage(post.image_url)} />
+          </div>
+        )}
         <div className="whitespace-pre-wrap">{post.content}</div>
       </div>
       {canModify && (
