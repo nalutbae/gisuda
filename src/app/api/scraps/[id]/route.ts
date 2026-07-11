@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { get, run } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -7,8 +7,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const session = await auth();
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
     const { id } = await params;
-    const db = getDb();
-    const scrap = db.prepare("SELECT s.*, u.name as user_name FROM scraps s JOIN users u ON s.user_id = u.id WHERE s.id = ?").get(id);
+    const scrap = await get("SELECT s.*, u.name as user_name FROM scraps s JOIN users u ON s.user_id = u.id WHERE s.id = ?", [id]);
     if (!scrap) return NextResponse.json({ error: "스크랩 없음" }, { status: 404 });
     return NextResponse.json({ success: true, data: scrap });
   } catch (err) {
@@ -22,12 +21,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     const session = await auth();
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
     const { id } = await params;
-    const db = getDb();
     const role = session.user?.role;
     if (role === "SUPER_ADMIN" || role === "ADMIN") {
-      db.prepare("DELETE FROM scraps WHERE id = ?").run(id);
+      await run("DELETE FROM scraps WHERE id = ?", [id]);
     } else {
-      db.prepare("DELETE FROM scraps WHERE id = ? AND user_id = ?").run(id, session.user?.id);
+      await run("DELETE FROM scraps WHERE id = ? AND user_id = ?", [id, session.user?.id]);
     }
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { get } from "./db";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -11,13 +12,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        // Dynamic import to avoid bundling better-sqlite3 at build time
-        const { getDb } = await import("./db");
         const bcrypt = await import("bcryptjs");
-        const db = getDb();
-        const user = db.prepare("SELECT * FROM users WHERE email = ?").get(credentials.email) as
-          | { id: string; email: string; name: string; password_hash: string; role: string }
-          | undefined;
+        const user = await get<{ id: string; email: string; name: string; password_hash: string; role: string }>(
+          "SELECT * FROM users WHERE email = ?",
+          [credentials.email]
+        );
         if (!user) return null;
         const valid = await bcrypt.compare(credentials.password as string, user.password_hash);
         if (!valid) return null;

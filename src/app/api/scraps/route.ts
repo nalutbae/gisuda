@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { query, run } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { v4 as uuid } from "uuid";
 
 export async function GET() {
   try {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
-    const db = getDb();
-    const scraps = db.prepare(`
+    const scraps = await query(`
       SELECT s.id, s.scrap_date, s.news_date, s.title, s.link, s.newspaper, s.region, s.keywords, s.summary, s.translation, s.commentary, s.user_id, u.name as user_name
       FROM scraps s JOIN users u ON s.user_id = u.id
       ORDER BY s.scrap_date DESC, s.created_at DESC
-    `).all();
+    `);
     return NextResponse.json({ success: true, data: scraps });
   } catch (err) {
     console.error("[Scraps GET]", err);
@@ -29,13 +27,12 @@ export async function POST(req: Request) {
     if (!scrap_date || !news_date || !title || !link) {
       return NextResponse.json({ error: "필수 항목 누락" }, { status: 400 });
     }
-    const db = getDb();
     const userId = session.user?.id;
-    const id = uuid();
-    db.prepare(`
+    const id = crypto.randomUUID();
+    await run(`
       INSERT INTO scraps (id, user_id, scrap_date, news_date, title, link, newspaper, region, keywords, summary, translation, commentary)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, userId, scrap_date, news_date, title, link, newspaper || null, region || null, keywords || null, summary || null, translation || null, commentary || null);
+    `, [id, userId, scrap_date, news_date, title, link, newspaper || null, region || null, keywords || null, summary || null, translation || null, commentary || null]);
     return NextResponse.json({ success: true, id });
   } catch (err) {
     console.error("[Scraps POST]", err);
@@ -50,13 +47,12 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id 필요" }, { status: 400 });
-    const db = getDb();
     const role = session.user?.role;
     if (role === "SUPER_ADMIN" || role === "ADMIN") {
-      db.prepare("DELETE FROM scraps WHERE id = ?").run(id);
+      await run("DELETE FROM scraps WHERE id = ?", [id]);
     } else {
       const userId = session.user?.id;
-      db.prepare("DELETE FROM scraps WHERE id = ? AND user_id = ?").run(id, userId);
+      await run("DELETE FROM scraps WHERE id = ? AND user_id = ?", [id, userId]);
     }
     return NextResponse.json({ success: true });
   } catch (err) {

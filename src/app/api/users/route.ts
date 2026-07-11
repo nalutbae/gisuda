@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { query, run } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
 export async function GET() {
@@ -10,8 +10,7 @@ export async function GET() {
     if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
       return NextResponse.json({ error: "관리자만 접근 가능" }, { status: 403 });
     }
-    const db = getDb();
-    const users = db.prepare("SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC").all();
+    const users = await query("SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC");
     return NextResponse.json({ success: true, data: users });
   } catch (err) {
     console.error("[Users GET]", err);
@@ -30,8 +29,7 @@ export async function PATCH(req: Request) {
     if (!userId || !role || !["ADMIN", "USER"].includes(role)) {
       return NextResponse.json({ error: "유효하지 않은 요청" }, { status: 400 });
     }
-    const db = getDb();
-    db.prepare("UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?").run(role, userId);
+    await run("UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?", [role, userId]);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[Users PATCH]", err);

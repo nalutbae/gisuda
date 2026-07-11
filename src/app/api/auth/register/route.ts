@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { get, run } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { v4 as uuid } from "uuid";
 
@@ -13,19 +13,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "비밀번호는 4자 이상이어야 합니다" }, { status: 400 });
     }
 
-    const db = getDb();
-
     // Check if email already exists
-    const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+    const existing = await get("SELECT id FROM users WHERE email = ?", [email]);
     if (existing) {
       return NextResponse.json({ error: "이미 가입된 이메일입니다" }, { status: 409 });
     }
 
     const id = uuid();
     const hash = bcrypt.hashSync(password, 10);
-    db.prepare("INSERT INTO users (id, email, name, password_hash, role) VALUES (?, ?, ?, ?, ?)").run(
+    await run("INSERT INTO users (id, email, name, password_hash, role) VALUES (?, ?, ?, ?, ?)", [
       id, email, name, hash, "USER"
-    );
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (err) {
