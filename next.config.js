@@ -2,7 +2,7 @@ const path = require("path");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["better-sqlite3", "bcryptjs"],
+  serverExternalPackages: ["better-sqlite3", "bcryptjs", "@neondatabase/serverless"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },
