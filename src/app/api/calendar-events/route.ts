@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
-    if (session.user?.role !== "ADMIN") {
+    if (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "관리자만 공지를 추가할 수 있습니다" }, { status: 403 });
     }
     const body = await req.json();
@@ -48,7 +48,7 @@ export async function DELETE(req: Request) {
   try {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
-    if (session.user?.role !== "ADMIN") {
+    if (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "관리자만 삭제할 수 있습니다" }, { status: 403 });
     }
     const { searchParams } = new URL(req.url);
