@@ -1,23 +1,46 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 
-interface Post { id: string; user_id: string; title: string; content: string; image_url: string }
+interface Post {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  is_notice: number;
+  image_url: string;
+  calendar_date: string | null;
+}
 
 export default function EditPostPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const id = params?.id as string;
+  const isAdmin = (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState<Post>({ id: "", user_id: "", title: "", content: "", image_url: "" });
+  const [form, setForm] = useState<Post>({ id: "", user_id: "", title: "", content: "", is_notice: 0, image_url: "", calendar_date: null });
+  const [calendarDate, setCalendarDate] = useState("");
 
   useEffect(() => {
     if (!id) return;
     fetch(`/api/posts/${id}`).then(r => r.json()).then(d => {
-      if (d.success) setForm({ id: d.data.id, user_id: d.data.user_id, title: d.data.title, content: d.data.content, image_url: d.data.image_url || "" });
+      if (d.success) {
+        setForm({
+          id: d.data.id,
+          user_id: d.data.user_id,
+          title: d.data.title,
+          content: d.data.content,
+          is_notice: d.data.is_notice,
+          image_url: d.data.image_url || "",
+          calendar_date: d.data.calendar_date || null,
+        });
+        setCalendarDate(d.data.calendar_date || "");
+      }
       setLoading(false);
     });
   }, [id]);
@@ -49,7 +72,12 @@ export default function EditPostPage() {
     const res = await fetch(`/api/posts/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: form.title, content: form.content, image_url: form.image_url || null })
+      body: JSON.stringify({
+        title: form.title,
+        content: form.content,
+        image_url: form.image_url || null,
+        calendar_date: form.is_notice ? calendarDate || null : null,
+      })
     });
     setSaving(false);
     if (res.ok) {
@@ -69,6 +97,18 @@ export default function EditPostPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <input type="text" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="제목" required />
         <textarea value={form.content} onChange={(e) => setForm({...form, content: e.target.value})} className="w-full border rounded-lg px-3 py-2" rows={8} placeholder="내용" required />
+        {isAdmin && form.is_notice === 1 && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <label className="block text-sm font-medium mb-1">📅 달력 표시 날짜</label>
+            <input
+              type="date"
+              value={calendarDate}
+              onChange={(e) => setCalendarDate(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">날짜를 변경하면 달력의 공지 표시 위치가 업데이트됩니다.</p>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium mb-1">이미지 첨부</label>
           <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm" disabled={uploading} />

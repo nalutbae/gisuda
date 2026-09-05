@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     if (isAdmin) {
       // 관리자는 모든 공지(비활성 포함) 조회 가능
       posts = await query(`
-        SELECT p.id, p.user_id, p.title, p.content, p.is_notice, p.is_pinned, p.is_active, p.image_url, p.created_at, p.updated_at, u.name as user_name
+        SELECT p.id, p.user_id, p.title, p.content, p.is_notice, p.is_pinned, p.is_active, p.image_url, p.calendar_date, p.created_at, p.updated_at, u.name as user_name
         FROM posts p JOIN users u ON p.user_id = u.id
         WHERE p.deleted_at IS NULL
         ORDER BY p.is_notice DESC, p.is_pinned DESC, p.created_at DESC
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     } else {
       // 일반 사용자는 활성 공지만 조회
       posts = await query(`
-        SELECT p.id, p.user_id, p.title, p.content, p.is_notice, p.is_pinned, p.is_active, p.image_url, p.created_at, p.updated_at, u.name as user_name
+        SELECT p.id, p.user_id, p.title, p.content, p.is_notice, p.is_pinned, p.is_active, p.image_url, p.calendar_date, p.created_at, p.updated_at, u.name as user_name
         FROM posts p JOIN users u ON p.user_id = u.id
         WHERE p.deleted_at IS NULL AND (p.is_notice = 0 OR (p.is_notice = 1 AND p.is_active = 1))
         ORDER BY p.is_notice DESC, p.is_pinned DESC, p.created_at DESC
@@ -41,14 +41,27 @@ export async function POST(req: Request) {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
     const body = await req.json();
-    const { title, content, is_notice, image_url } = body;
+    const { title, content, is_notice, image_url, calendar_date } = body;
     if (!title || !content) return NextResponse.json({ error: "필수 항목 누락" }, { status: 400 });
     const userId = session.user?.id;
     const isAdmin = session.user?.role === "ADMIN" || session.user?.role === "SUPER_ADMIN";
     const id = uuid();
-    await run("INSERT INTO posts (id, user_id, title, content, is_notice, is_pinned, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)", [
-      id, userId, title, content, isAdmin && is_notice ? 1 : 0, 0, image_url || null
+    const noticeFlag = isAdmin && is_notice ? 1 : 0;
+    const calDate = noticeFlag && calendar_date ? calendar_date : null;
+
+    await run("INSERT INTO posts (id, user_id, title, content, is_notice, is_pinned, image_url, calendar_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
+      id, userId, title, content, noticeFlag, 0, image_url || null, calDate
     ]);
+
+    // 공지로 등록 시 calendar_events에도 자동 등록
+    if (noticeFlag && calDate) {
+      const eventId = uuid();
+      await run(
+        "INSERT INTO calendar_events (id, date, title, content, created_by) VALUES (?, ?, ?, ?, ?)",
+        [eventId, calDate, title, content || "", userId]
+      );
+    }
+
     return NextResponse.json({ success: true, id });
   } catch (err) {
     console.error("[Posts POST]", err);

@@ -42,6 +42,7 @@ export function initDatabase(db: Database.Database): void {
       { name: 'deleted_at', sql: "ALTER TABLE posts ADD COLUMN deleted_at TEXT DEFAULT NULL" },
       { name: 'is_active', sql: "ALTER TABLE posts ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1" },
       { name: 'image_url', sql: 'ALTER TABLE posts ADD COLUMN image_url TEXT' },
+      { name: 'calendar_date', sql: 'ALTER TABLE posts ADD COLUMN calendar_date TEXT' },
     ];
     for (const col of postNewColumns) {
       if (!postColumnNames.includes(col.name)) {

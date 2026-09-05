@@ -7,7 +7,7 @@ export default function NewPostPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const isAdmin = (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-  const [form, setForm] = useState({ title: "", content: "", is_notice: false, image_url: "" });
+  const [form, setForm] = useState({ title: "", content: "", is_notice: false, image_url: "", calendar_date: "" });
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -48,6 +48,8 @@ export default function NewPostPage() {
     }
   }
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl font-bold mb-6">✏️ 글쓰기</h1>
@@ -55,10 +57,25 @@ export default function NewPostPage() {
         <input type="text" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="제목" required />
         <textarea value={form.content} onChange={(e) => setForm({...form, content: e.target.value})} className="w-full border rounded-lg px-3 py-2" rows={8} placeholder="내용" required />
         {isAdmin && (
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={form.is_notice} onChange={(e) => setForm({...form, is_notice: e.target.checked})} className="w-4 h-4" />
-            <span className="text-sm">📢 공지로 등록</span>
-          </label>
+          <>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={form.is_notice} onChange={(e) => setForm({...form, is_notice: e.target.checked, calendar_date: e.target.checked ? form.calendar_date || todayStr : ""})} className="w-4 h-4" />
+              <span className="text-sm">📢 공지로 등록</span>
+            </label>
+            {form.is_notice && (
+              <div className="ml-6 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <label className="block text-sm font-medium mb-1">📅 달력 표시 날짜</label>
+                <input
+                  type="date"
+                  value={form.calendar_date}
+                  onChange={(e) => setForm({...form, calendar_date: e.target.value})}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  required={form.is_notice}
+                />
+                <p className="text-xs text-gray-500 mt-1">선택한 날짜에 달력에 공지가 표시됩니다.</p>
+              </div>
+            )}
+          </>
         )}
         <div>
           <label className="block text-sm font-medium mb-1">이미지 첨부</label>

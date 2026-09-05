@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS posts (
   is_pinned INTEGER NOT NULL DEFAULT 0,  -- 상단 고정 여부
   is_active INTEGER NOT NULL DEFAULT 1,   -- 활성/비활성 (비활성 공지는 일반 사용자에게 숨김)
   image_url TEXT,                          -- 첨부 이미지 URL
+  calendar_date TEXT,                       -- 공지 달력 표시 날짜 (YYYY-MM-DD)
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   deleted_at TEXT DEFAULT NULL

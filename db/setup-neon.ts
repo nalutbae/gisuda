@@ -82,6 +82,7 @@ async function main() {
     { table: 'posts', column: 'deleted_at', type: 'TIMESTAMPTZ DEFAULT NULL' },
     { table: 'posts', column: 'is_active', type: 'INTEGER NOT NULL DEFAULT 1' },
     { table: 'posts', column: 'image_url', type: 'TEXT' },
+    { table: 'posts', column: 'calendar_date', type: 'TEXT' },
   ];
 
   for (const m of migrations) {
